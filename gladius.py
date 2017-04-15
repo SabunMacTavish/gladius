@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import time
 import tempfile
 import os
@@ -33,7 +34,7 @@ colors = {
     'cyan'           : "\x1b[36m",
     'grey'           : "\x1b[90m",
     'gray'           : "\x1b[90m",
-    'bold'           : "\x1b[1m"
+    'bold'           : "\x1b[1m",
 }
 
 ntlm_hashes = defaultdict(dict)
@@ -297,6 +298,10 @@ class ResponderHandler(GladiusHandler):
                         ntlm_hashes[hash]['users'].append(username)
 
                 elif curr_hash.lower() in event.src_path.lower():
+                    # Ignore service accounts
+                    if '$' in line:
+                        continue
+
                     hash_type = curr_type
                     info("New hash to crack: {}".format(line))
                     new_hashes.append(line)
@@ -553,12 +558,10 @@ Add --hashcat to select the new binary.''', color='red')
     for msf in [name for name in os.listdir(os.path.expanduser('~')) if 'msf' in name]:
         handlers.append((ResponderHandler, os.path.join(os.path.expanduser('~'), msf, 'loot')))
 
-    # Listen for all .msf folders - .msf4 and .msf5
-    for msf in [name for name in os.listdir('/root') if 'msf' in name]:
-        handlers.append((ResponderHandler, os.path.join('/root', msf, 'loot')))
-
     observer = Observer()
     observers = []
+
+    print(color("Current rule list: {}".format(args.ruleset), color='green', graphic='[-] '))
 
     for handler, path in handlers:
         if not os.path.exists(path):
